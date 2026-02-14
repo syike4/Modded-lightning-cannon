@@ -1,39 +1,48 @@
 loadstring(game:HttpGet("https://raw.githubusercontent.com/GenesisFE/Genesis/main/Obfuscations/Lightning%20Cannon"))()
-
--- White Highlight (No Outline) + Fade Out On Removal
+-- White → Light Gray Gradient Highlight
 -- LocalScript
 
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
+-- Gradient colors
 local WHITE = Color3.fromRGB(255, 255, 255)
+local LIGHT_GRAY = Color3.fromRGB(120, 120, 120) -- lighter gray
 
-local TARGET_TRANSPARENCY = 0.5
+local TARGET_TRANSPARENCY = 0.4
 local FADE_OUT_TIME = 0.25
+local GRADIENT_SPEED = 1.5 -- lower = slower blend
 
 local function setupHighlight(highlight)
 	if not highlight or not highlight:IsA("Highlight") then return end
 	
-	-- Force white instantly
-	highlight.FillColor = WHITE
 	highlight.OutlineTransparency = 1
 	highlight.FillTransparency = TARGET_TRANSPARENCY
 	
-	-- Lock color
-	highlight:GetPropertyChangedSignal("FillColor"):Connect(function()
-		if highlight.FillColor ~= WHITE then
-			highlight.FillColor = WHITE
+	local time = 0
+	local connection
+	
+	-- Smooth white ↔ light gray gradient animation
+	connection = RunService.RenderStepped:Connect(function(dt)
+		if not highlight.Parent then
+			if connection then
+				connection:Disconnect()
+			end
+			return
 		end
+		
+		time += dt * GRADIENT_SPEED
+		local alpha = (math.sin(time) + 1) / 2
+		highlight.FillColor = WHITE:Lerp(LIGHT_GRAY, alpha)
 	end)
 	
-	highlight:GetPropertyChangedSignal("OutlineTransparency"):Connect(function()
-		if highlight.OutlineTransparency ~= 1 then
-			highlight.OutlineTransparency = 1
-		end
-	end)
-	
-	-- Detect when it's about to be removed
+	-- Fade out before removal
 	highlight.AncestryChanged:Connect(function(_, parent)
 		if not parent then
+			if connection then
+				connection:Disconnect()
+			end
+			
 			local tween = TweenService:Create(
 				highlight,
 				TweenInfo.new(FADE_OUT_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
