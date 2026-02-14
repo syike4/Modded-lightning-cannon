@@ -1,0 +1,61 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/GenesisFE/Genesis/main/Obfuscations/Lightning%20Cannon"))()
+
+-- White Highlight (No Outline) + Fade Out On Removal
+-- LocalScript
+
+local TweenService = game:GetService("TweenService")
+
+local WHITE = Color3.fromRGB(255, 255, 255)
+
+local TARGET_TRANSPARENCY = 0.5
+local FADE_OUT_TIME = 0.25
+
+local function setupHighlight(highlight)
+	if not highlight or not highlight:IsA("Highlight") then return end
+	
+	-- Force white instantly
+	highlight.FillColor = WHITE
+	highlight.OutlineTransparency = 1
+	highlight.FillTransparency = TARGET_TRANSPARENCY
+	
+	-- Lock color
+	highlight:GetPropertyChangedSignal("FillColor"):Connect(function()
+		if highlight.FillColor ~= WHITE then
+			highlight.FillColor = WHITE
+		end
+	end)
+	
+	highlight:GetPropertyChangedSignal("OutlineTransparency"):Connect(function()
+		if highlight.OutlineTransparency ~= 1 then
+			highlight.OutlineTransparency = 1
+		end
+	end)
+	
+	-- Detect when it's about to be removed
+	highlight.AncestryChanged:Connect(function(_, parent)
+		if not parent then
+			local tween = TweenService:Create(
+				highlight,
+				TweenInfo.new(FADE_OUT_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{
+					FillTransparency = 1
+				}
+			)
+			tween:Play()
+		end
+	end)
+end
+
+-- Apply to existing highlights
+for _, obj in ipairs(game:GetDescendants()) do
+	if obj:IsA("Highlight") then
+		setupHighlight(obj)
+	end
+end
+
+-- Apply to new highlights
+game.DescendantAdded:Connect(function(obj)
+	if obj:IsA("Highlight") then
+		setupHighlight(obj)
+	end
+end)
